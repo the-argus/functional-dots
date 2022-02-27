@@ -11,3 +11,5 @@ virtio.iso: 	https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/st
 - run install
 
 - run start
+
+helpful link: https://rentry.co/fwt
