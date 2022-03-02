@@ -8,3 +8,5 @@ user_pref("browser.startup.page", 1);
 
 // allow search engine searching from the urlbar
 user_pref("keyword.enabled", true);
+
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
