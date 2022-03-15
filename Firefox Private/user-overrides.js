@@ -10,3 +10,5 @@ user_pref("browser.startup.page", 1);
 user_pref("keyword.enabled", true);
 
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
+
+user_pref("privacy.resistFingerprinting.letterboxing", false);
