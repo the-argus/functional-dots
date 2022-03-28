@@ -1,0 +1,2 @@
+ffmpeg -y -i input.mp4 -vf fps=10,scale=716:-1:flags=lanczos,palettegen palette.png
+ffmpeg -i input.mp4 -i palette.png -filter_complex "fps=10,scale=716:-1:flags=lanczos[x];[x][1:v]paletteuse" output.gif
