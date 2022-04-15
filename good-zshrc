@@ -1,0 +1,277 @@
+# history
+setopt histignorealldups sharehistory
+HISTSIZE=1000
+SAVEHIST=1000
+HISTFILE=~/.zsh_history
+
+# keybinding style
+bindkey -v
+
+# LOADING ---------------------------------------------------------
+
+source ~/.aliases
+source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/.local/src/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+
+autoload -Uz add-zsh-hook vcs_info
+
+# CONFIG ----------------------------------------------------------
+
+# VARS
+# BOLD=$(echo -e "\e[01m")
+# REGULAR=$(echo -e "\e[00m")
+# COL1=$(echo -e "\e[31m")
+# COL2=$(echo -e "\e[32m")
+# COL3=$(echo -e "\e[33m")
+# COL4=$(echo -e "\e[34m")
+# COL5=$(echo -e "\e[35m")
+
+BOLD="%B"
+REGULAR="%f%b"
+COL1="%F{red}"
+COL2="%F{green}"
+COL3="%F{yellow}"
+COL4="%F{blue}"
+COL5="%F{magenta}"
+
+EDITOR=nvim
+SUDO_EDITOR='/usr/bin/nvim'
+export PATH=$PATH:$HOME/.spicetify
+export PATH=$PATH:$HOME/.local/src/spicetify/bin
+export XDG_DATA_DIRS="/var/lib/flatpak/exports/share:$XDG_DATA_DIRS"
+export XDG_DATA_DIRS="$HOME/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
+#export PYENV_ROOT="$HOME/.local/src/pyenv"
+#export PATH="$PYENV_ROOT/bin:$PATH"
+
+#
+# PROMPT CONFIG
+#
+
+# DEFAULTS ---------------
+USER_STYLE="$COL3"
+HOST_STYLE="$COL4"
+DIR_STYLE="$COL5"
+GIT_STYLE="$COL4"
+PYTHON_STYLE="$COL3"
+MOD_SEP_STYLE="$BOLD$COL1"
+USER_HOST_SEP_STYLE="$BOLD$COL1"
+HOST_DIR_SEP_STYLE="$BOLD$COL1"
+
+PROMPT_START="┬"
+NAME_HOST_SEPARATOR="@"
+HOST_DIR_SEPARATOR=":"
+MODULE_SEPARATOR_START="─["
+MODULE_SEPARATOR_END="]"
+NEWLINE_PROMPT_START="╰─>$ "
+BACKGROUND_JOB_CHAR="✦ "
+
+PROMPT_SHOW_GIT=true
+PROMPT_SHOW_PYTHON=true
+
+MAIN_MODULE_SEPARATOR_START="$MODULE_SEPARATOR_START"
+MAIN_MODULE_SEPARATOR_END="$MODULE_SEPARATOR_END"
+
+# good characters:  or  or  or 
+GIT_MODULE_SEPARATOR_START="${MODULE_SEPARATOR_START} "
+GIT_MODULE_SEPARATOR_END="$MODULE_SEPARATOR_END"
+
+# good characters: 🐍 or  or 
+PYTHON_MODULE_SEPARATOR_START="${MODULE_SEPARATOR_START}python "
+PYTHON_MODULE_SEPARATOR_END="$MODULE_SEPARATOR_END"
+
+# OVERRIDES --------------
+PROMPT_START=""
+NAME_HOST_SEPARATOR=" at "
+HOST_DIR_SEPARATOR=" in "
+MODULE_SEPARATOR_START=" "
+MODULE_SEPARATOR_END=" "
+NEWLINE_PROMPT_START="❯ "
+MAIN_MODULE_SEPARATOR_START=""
+MAIN_MODULE_SEPARATOR_END=""
+GIT_MODULE_SEPARATOR_START="${MODULE_SEPARATOR_START}on "
+GIT_MODULE_SEPARATOR_END="$MODULE_SEPARATOR_END"
+PYTHON_MODULE_SEPARATOR_START="${MODULE_SEPARATOR_START}using python "
+PYTHON_MODULE_SEPARATOR_END="$MODULE_SEPARATOR_END"
+
+USER_HOST_SEP_STYLE="$REGULAR"
+HOST_DIR_SEP_STYLE="$REGULAR"
+MOD_SEP_STYLE="$REGULAR"
+HOST_STYLE="$COL1"
+
+# Enable substitution in the prompt.
+setopt prompt_subst
+
+#
+# GITHUB MODULE CONFIG
+#
+
+
+# Run vcs_info on the precmd hook
+# (output stored in vcs_info_msg_0)
+add-zsh-hook precmd vcs_info
+
+# check for unstaged changes
+zstyle ':vcs_info:*' check-for-changes true
+
+# set git changes characters
+zstyle ':vcs_info:*' unstagedstr ' ?'
+zstyle ':vcs_info:*' stagedstr ' +'
+
+# VCS display format normally
+zstyle ':vcs_info:git:*' formats       '%b%u%c'
+# format when merging n stuff
+zstyle ':vcs_info:git:*' actionformats '%b|%a%u%c'
+#    %b the current branch name
+#    %u are there any unstaged changes
+#    %c are there any staged changes
+#    %a the current Git action being performed
+
+
+#
+# AUTOCOMPLETION CONFIG
+#
+
+# minimum number of characters to type before autocomplete
+zstyle ':autocomplete:*' min-input 1
+# only insert up to common characters
+zstyle ':autocomplete:*' insert-unambiguous yes
+# dont move prompt up to make room for autocomplete very much
+zstyle ':autocomplete:*' list-lines 4
+# tab multiple times to move through menu
+zstyle ':autocomplete:*' widget-style menu-select
+
+# PROMPT ----------------------------------------------------------
+
+# UTILITY FUNCTION
+function _exists() {
+    command -v $1 > /dev/null 2>&1
+}
+
+function _running_job_char() {
+    local job_running="$(jobs)"
+
+    if [ -z "$job_running" ]; then
+        return
+    else
+        echo $BACKGROUND_JOB_CHAR
+    fi
+}
+
+function _main_module () {
+    local module="${MOD_SEP_STYLE}${MAIN_MODULE_SEPARATOR_START}${REGULAR}"
+    local dir=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [ -z "$dir" ]; then
+        dir="%~"
+    else
+        dir=$(realpath --relative-to ${dir}/.. ${PWD})
+    fi
+    # name and host
+    module="${module}${USER_STYLE}%n${REGULAR}"
+    module="${module}${USER_HOST_SEP_STYLE}${NAME_HOST_SEPARATOR}${REGULAR}"
+    module="${module}${HOST_STYLE}%m${REGULAR}"
+    # current working directory
+    module="${module}${HOST_DIR_SEP_STYLE}${HOST_DIR_SEPARATOR}${REGULAR}"
+    module="${module}${DIR_STYLE}${dir}${REGULAR}"
+    # end cap
+    module="${module}${MOD_SEP_STYLE}${MAIN_MODULE_SEPARATOR_END}${REGULAR}"
+    echo $module
+}
+
+function _git_module () {
+    if [[ $PROMPT_SHOW_GIT == false ]]; then
+        return
+    fi
+    
+    local git_current_branch=$vcs_info_msg_0_
+
+    if [ -z "$git_current_branch" ]; then
+        return
+    fi
+
+    local module="${MOD_SEP_STYLE}${GIT_MODULE_SEPARATOR_START}${REGULAR}"
+    module="${module}${GIT_STYLE}${vcs_info_msg_0_}${REGULAR}"
+    module="${module}${MOD_SEP_STYLE}${GIT_MODULE_SEPARATOR_END}${REGULAR}"
+
+    echo $module
+}
+
+function _python_module () {
+    if [[ $PROMPT_SHOW_PYTHON == false ]]; then
+        return
+    fi
+    
+    # return if there is python installed in path
+    _exists python || return
+    
+    # Show pyenv python version only for Python-specific folders
+    if ! test -n "$(find . -maxdepth 1 -name '*.py' -print -quit)"
+    then
+        return
+    fi
+    
+
+    local python_version=$(python --version)
+    python_version=${python_version#Python }
+
+    if [ -z "$python_version" ]; then
+        return
+    fi
+
+    local module="${MOD_SEP_STYLE}${PYTHON_MODULE_SEPARATOR_START}${REGULAR}"
+    module="${module}${PYTHON_STYLE}${python_version}${REGULAR}"
+    module="${module}${MOD_SEP_STYLE}${PYTHON_MODULE_SEPARATOR_END}${REGULAR}"
+
+    echo $module
+}
+
+function _start_module () {
+    echo "${MOD_SEP_STYLE}${PROMPT_START}${REGULAR}"
+}
+
+function _newline_module () {
+    echo "${MOD_SEP_STYLE}${NEWLINE_PROMPT_START}${REGULAR}"
+}
+
+function _command_time_preexec() {
+  # check excluded
+  if [ -n "$ZSH_COMMAND_TIME_EXCLUDE" ]; then
+    cmd="$1"
+    for exc ($ZSH_COMMAND_TIME_EXCLUDE) do;
+      if [ "$(echo $cmd | grep -c "$exc")" -gt 0 ]; then
+        # echo "command excluded: $exc"
+        return
+      fi
+    done
+  fi
+
+  timer=${timer:-$SECONDS}
+  ZSH_COMMAND_TIME_MSG=${ZSH_COMMAND_TIME_MSG-"Time: %s"}
+  ZSH_COMMAND_TIME_COLOR=${ZSH_COMMAND_TIME_COLOR-"white"}
+  export ZSH_COMMAND_TIME=""
+}
+
+function _command_time_precmd() {
+  if [ $timer ]; then
+    timer_show=$(($SECONDS - $timer))
+    if [ -n "$TTY" ] && [ $timer_show -ge ${ZSH_COMMAND_TIME_MIN_SECONDS:-3} ]; then
+      export ZSH_COMMAND_TIME="$timer_show"
+      if [ ! -z ${ZSH_COMMAND_TIME_MSG} ]; then
+        zsh_command_time
+      fi
+    fi
+    unset timer
+  fi
+}
+
+function zsh_command_time() {
+  if [ -n "$ZSH_COMMAND_TIME" ]; then
+    timer_show=$(printf '%dh:%02dm:%02ds\n' $(($ZSH_COMMAND_TIME/3600)) $(($ZSH_COMMAND_TIME%3600/60)) $(($ZSH_COMMAND_TIME%60)))
+    print -P "%F{$ZSH_COMMAND_TIME_COLOR}$(printf "${ZSH_COMMAND_TIME_MSG}\n" "$timer_show")%f"
+  fi
+}
+
+precmd_functions+=(_command_time_precmd)
+preexec_functions+=(_command_time_preexec)
+
+prompt='$(_start_module)$(_main_module)$(_git_module)$(_python_module)'$'\n''$(_newline_module)$(_running_job_char)'
+
