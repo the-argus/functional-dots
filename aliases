@@ -1,0 +1,45 @@
+#!/bin/bash
+
+function open () {
+	xdg-open "$@">/dev/null 2>&1
+}
+
+function ls () { command ls --color=auto --group-directories-first "$@"; }
+
+function lsl () {
+	ls -la --color=always $1 | command grep "^d" && ls -la $1 | command grep -v "^d"
+}
+
+function diff () { command diff --color=auto "$@"; }
+
+function grep () { command grep "$@" --color=always; }
+
+function ip () { command ip -color=auto "$@"; }
+
+function pc () { sudo pacman --color always "$@"; }
+
+function pacman () { command pacman --color always "$@"; }
+
+duk ()
+{
+   sudo du -k "$@" | sort -n
+}
+
+function compress () {
+    ffmpeg \
+        -i "$1" \
+        -vcodec h264 \
+        -acodec mp2 \
+        COMPRESSED-$1;
+    }
+
+alias ls="ptls"
+alias pwd="ptpwd"
+alias cp="ptcp"
+
+
+alias matrix="tmatrix -c default -C magenta -s 60 -f 0.2,0.3 -g 10,20 -l 1,50 -t \"hello, argus.\""
+alias vim="nvim"
+alias batt="cat /sys/class/power_supply/BAT0/capacity"
+alias nf="neofetch"
+alias fm="ranger"
